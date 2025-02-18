@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tools & Scripts Portal</title>
+  <!-- jsPDF CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Retro Pixel Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <style>
+    /* GENERAL DARK STYLE (Discord-inspired) */
+    body {
+      background-color: #36393f;
+      color: #dcddde;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding-top: 60px; /* space for toolbar */
+    }
+    /* Apply retro pixel font to headings and production card texts */
+    h1, h2, .production-card .card-info, .production-card a {
+      font-family: 'Press Start 2P', cursive;
+    }
+    /* TOOLBAR */
+    #toolbar {
+      background-color: #2f3136;
+      color: #dcddde;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+    }
+    #toolbarTitle {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    #toolbarUser {
+      position: relative;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    /* User dropdown */
+    #userDropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 30px;
+      background-color: #2f3136;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      z-index: 101;
+    }
+    #userDropdown div {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #userDropdown div:hover {
+      background-color: #40444b;
+    }
+    h1, h2 {
+      color: #7289da;
+      text-align: center;
+    }
+    /* LANDING PAGE */
+    #landingContainer {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    #personalInfo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    #personalInfo h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    #personalInfo p {
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+    /* PRODUCTIONS CAROUSEL */
+    #productions {
+      margin-top: 20px;
+    }
+    .carousel-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      margin: 0 auto 30px;
+    }
+    .carousel-track {
+      display: flex;
+      gap: 15px;
+      animation: scroll 30s linear infinite;
+    }
+    .production-card {
+      background-color: #2f3136;
+      border: 1px solid #202225;
+      border-radius: 8px;
+      overflow: hidden;
+      flex: 0 0 auto;
+      width: 150px;
+      transition: transform 0.3s;
+    }
+    .production-card.active {
+      transform: scale(1.2);
+    }
+    .production-card img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .production-card .card-info {
+      padding: 8px;
+    }
+    .production-card a {
+      text-decoration: none;
+      color: inherit;
+    }
+    /* Keyframes for carousel auto-scroll */
+    @keyframes scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    /* SKILLS SECTION */
+    #skills ul {
+      list-style: none;
+      padding: 0;
+    }
+    #skills ul li {
+      display: inline-block;
+      background-color: #2f3136;
+      margin: 5px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid #202225;
+    }
+    /* LOGIN FORM (within landing) */
+    #toolsLogin {
+      max-width: 400px;
+      margin: 30px auto;
+      background-color: #2f3136;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    #toolsLogin h2 {
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+    }
+    #toolsLogin input[type="text"],
+    #toolsLogin input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      background-color: #202225;
+      color: #dcddde;
+      box-sizing: border-box;
+    }
+    #toolsLogin button {
+      width: 100%;
+      padding: 10px;
+      background-color: #7289da;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    #toolsLogin button:hover {
+      background-color: #677bc4;
+    }
+    #loginError {
+      color: red;
+      text-align: center;
+    }
+    /* DASHBOARD */
+    #dashboard {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+    }
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 20px;
+    }
+    .tool {
+      background-color: #2f3136;
+      border: 1px solid #202225;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .tool:hover {
+      background-color: #40444b;
+    }
+    /* CALCULATOR PROCEDURAL */
+    #calculatorContainer {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+    }
+    .back-btn, #newCalcBtn, #generatePdfBtn {
+      margin-bottom: 10px;
+      padding: 8px;
+      background-color: #7289da;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: block;
+      width: 100%;
+      max-width: 200px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .back-btn:hover, #newCalcBtn:hover, #generatePdfBtn:hover {
+      background-color: #677bc4;
+    }
+    /* Calculation Pair Container */
+    .calc-pair {
+      position: relative;
+      border: 1px solid #202225;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 20px;
+      background-color: #2f3136;
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+    }
+    /* Close button for calc pair */
+    .close-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background-color: #e74c3c;
+      border: none;
+      border-radius: 50%;
+      width: 25px;
+      height: 25px;
+      color: white;
+      cursor: pointer;
+    }
+    .close-btn:hover {
+      background-color: #c0392b;
+    }
+    /* Calculator Panels */
+    .calculator {
+      background-color: #2f3136;
+      border: 1px solid #202225;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 0.9rem;
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0;
+    }
+    .calculator h2 {
+      margin: 0 0 10px;
+      font-size: 1.1rem;
+      color: #7289da;
+      text-align: center;
+    }
+    .input-row {
+      display: flex;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .input-row input[type="number"],
+    .input-row select {
+      flex: 1;
+    }
+    label {
+      margin-top: 10px;
+      display: block;
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 5px;
+      margin-top: 5px;
+      border: 1px solid #202225;
+      border-radius: 4px;
+      background-color: #202225;
+      color: #dcddde;
+      box-sizing: border-box;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    .footer {
+      margin-top: 15px;
+    }
+    .footer button {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 4px;
+      background-color: #7289da;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .footer button:hover {
+      background-color: #677bc4;
+    }
+    .result {
+      margin-top: 10px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <span id="toolbarTitle">Dashboard</span>
+    <span id="toolbarUser">admin
+      <div id="userDropdown">
+        <div onclick="logout()">Logout</div>
+      </div>
+    </span>
+  </div>
+
+  <!-- LANDING PAGE -->
+  <div id="landingContainer">
+    <div id="personalInfo">
+      <h1>Emanuel Aguado Pérez</h1>
+      <p>I am a CGI Generalist and Technical Director with extensive industry experience. My passion is to create visual and technical solutions that enhance every project.</p>
+    </div>
+    <section id="productions">
+      <h2>Productions</h2>
+      <!-- Carousel Container -->
+      <div class="carousel-container">
+        <div class="carousel-track">
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdnb.artstation.com/p/productions/covers/000/202/901/thumb/Proyecto_nuevo_%284%29.png?1737627390" alt="The light of Aisha">
+              <div class="card-info">
+                <strong>The light of Aisha</strong><br>
+                2025 | Pipeline TD<br>
+                Freelance
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdna.artstation.com/p/productions/covers/000/202/896/thumb/Proyecto_nuevo_%282%29.png?1737626710" alt="Grisù">
+              <div class="card-info">
+                <strong>Grisù</strong><br>
+                2024 | Technical Director<br>
+                Mondo TV Studios
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdnb.artstation.com/p/productions/covers/000/202/897/thumb/Proyecto_nuevo_%283%29.png?1737626901" alt="Nivis, friends from another world">
+              <div class="card-info">
+                <strong>Nivis, friends from another world</strong><br>
+                2023 | Technical Director<br>
+                MTV
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdnb.artstation.com/p/productions/covers/000/202/895/thumb/Proyecto_nuevo_%281%29.png?1737626329" alt="Talking Tom & Friends">
+              <div class="card-info">
+                <strong>Talking Tom & Friends</strong><br>
+                2020 | Render TD<br>
+                People Moving Pixels
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdna.artstation.com/p/productions/covers/000/202/894/thumb/Proyecto_nuevo.png?1737625701" alt="Pop-up">
+              <div class="card-info">
+                <strong>Pop-up</strong><br>
+                2019 | CG Generalist<br>
+                Somnis
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdna.artstation.com/p/productions/covers/000/064/054/thumb/bikes2.png?1545393807" alt="Bikes - The movie">
+              <div class="card-info">
+                <strong>Bikes - The movie</strong><br>
+                2019 | Model/Render<br>
+                Animation Bikes A.I.E
+              </div>
+            </a>
+          </div>
+          <div class="production-card">
+            <a href="https://emanuelaguado.artstation.com/resume" target="_blank">
+              <img src="https://cdnb.artstation.com/p/productions/covers/000/053/955/thumb/Poster.png?1529169860" alt="Lifetime - A Pacman Story">
+              <div class="card-info">
+                <strong>Lifetime - A Pacman Story</strong><br>
+                2018 | Sets & Props<br>
+                Bandai Namco & PrimerFrame
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section id="skills">
+      <h2>Skills</h2>
+      <ul>
+        <li>Programming</li>
+        <li>Shading</li>
+        <li>Lighting</li>
+        <li>Texturing</li>
+        <li>3D Modeling</li>
+        <li>Compositing</li>
+        <li>Rendering</li>
+      </ul>
+    </section>
+    <div id="toolsLogin">
+      <h2>Tools and Scripts</h2>
+      <div id="loginForm">
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <div id="loginError"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <h2>Dashboard</h2>
+    <div class="tool-grid">
+      <div class="tool" onclick="openCalculator()">
+        <div style="font-size: 40px;">🧮</div>
+        <p>Calculator</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALCULATOR PROCEDURAL -->
+  <div id="calculatorContainer">
+    <button class="back-btn" onclick="backToDashboard()">← Back to Dashboard</button>
+    <button id="newCalcBtn" onclick="newCalcInstance()">New Calculation</button>
+    <button id="generatePdfBtn" onclick="generatePDF()">Generate PDF</button>
+    <div id="calcInstances"></div>
+  </div>
+
+  <script>
+    // LOGIN & NAVIGATION FUNCTIONS
+    function login() {
+      var user = document.getElementById('username').value;
+      var pass = document.getElementById('password').value;
+      if (user === "admin" && pass === "Admin4dmin") {
+        document.getElementById('landingContainer').style.display = "none";
+        document.getElementById('dashboard').style.display = "block";
+        document.getElementById('toolbar').style.display = "flex";
+        document.getElementById('toolbarUser').innerText = user;
+        document.getElementById('toolbarTitle').innerText = "Dashboard";
+      } else {
+        document.getElementById('loginError').innerText = "Incorrect credentials.";
+      }
+    }
+    // User dropdown events
+    document.getElementById('toolbarUser').addEventListener('click', function(e) {
+      var dd = document.getElementById('userDropdown');
+      dd.style.display = dd.style.display === "block" ? "none" : "block";
+      e.stopPropagation();
+    });
+    document.addEventListener('click', function() {
+      document.getElementById('userDropdown').style.display = "none";
+    });
+    function logout() {
+      document.getElementById('toolbar').style.display = "none";
+      document.getElementById('dashboard').style.display = "none";
+      document.getElementById('calculatorContainer').style.display = "none";
+      document.getElementById('landingContainer').style.display = "block";
+      document.getElementById('username').value = "";
+      document.getElementById('password').value = "";
+    }
+    function openCalculator() {
+      document.getElementById('dashboard').style.display = "none";
+      document.getElementById('calculatorContainer').style.display = "block";
+      document.getElementById('toolbarTitle').innerText = "Calculator";
+      if(document.getElementById('calcInstances').children.length === 0){
+        newCalcInstance();
+      }
+    }
+    function backToDashboard() {
+      document.getElementById('calculatorContainer').style.display = "none";
+      document.getElementById('dashboard').style.display = "block";
+      document.getElementById('toolbarTitle').innerText = "Dashboard";
+    }
+    // CONVERSION FUNCTIONS
+    function convertToSecondsCalc(value, unit) {
+      if (unit === "seconds") return value;
+      if (unit === "minutes") return value * 60;
+      if (unit === "hours") return value * 3600;
+      if (unit === "frames") return value;
+      return value;
+    }
+    function convertFromSecondsCalc(value, unit) {
+      if (unit === "seconds") return value;
+      if (unit === "minutes") return value / 60;
+      if (unit === "hours") return value / 3600;
+      if (unit === "frames") return value;
+      return value;
+    }
+    function durationToFramesCalc(duration, unit, fps) {
+      if (unit === "frames") return duration;
+      return convertToSecondsCalc(duration, unit) * fps;
+    }
+    // CREATE NEW CALCULATION INSTANCE (Calculation Pair)
+    function newCalcInstance() {
+      var template = `
+      <div class="calc-pair">
+        <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+        <!-- Calculator: Total Time -->
+        <div class="calculator calc-total">
+          <h2>Total Time</h2>
+          <label>Nodes:</label>
+          <input type="number" class="nodesTotal" value="1" min="1" step="any">
+          <label>Time per frame:</label>
+          <div class="input-row">
+            <input type="number" class="timePerFrame" step="any" min="0">
+            <select class="unitFrame">
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+            </select>
+          </div>
+          <label>Duration:</label>
+          <div class="input-row">
+            <input type="number" class="duration" step="any" min="0">
+            <select class="unitDuration">
+              <option value="seconds">Seconds</option>
+              <option value="minutes" selected>Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="frames">Frames</option>
+            </select>
+          </div>
+          <label>FPS:</label>
+          <input type="number" class="fps" value="24" step="any" min="0">
+          <label>Result Unit:</label>
+          <select class="resultUnit">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours" selected>Hours</option>
+          </select>
+          <label>Steps:</label>
+          <input type="number" class="stepsTotal" value="1" step="any" min="1">
+          <div style="margin-bottom:10px;"></div>
+          <div class="footer">
+            <button class="calcTotalBtn">Calculate</button>
+            <div class="result resultTotal"></div>
+          </div>
+        </div>
+        <!-- Calculator: Time per Frame -->
+        <div class="calculator calc-frame">
+          <h2>Time per Frame</h2>
+          <label>Nodes:</label>
+          <input type="number" class="nodesFrame" value="1" step="any" min="1">
+          <label>Frames:</label>
+          <input type="number" class="frames" step="any" min="0">
+          <label>Total Render Time:</label>
+          <div class="input-row">
+            <input type="number" class="totalRenderTime" step="any" min="0">
+            <select class="unitTotal">
+              <option value="seconds">Seconds</option>
+              <option value="minutes">Minutes</option>
+              <option value="hours">Hours</option>
+              <option value="frames">Frames</option>
+            </select>
+          </div>
+          <label>Result Unit:</label>
+          <select class="resultUnitFrame">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours" selected>Hours</option>
+            <option value="frames">Frames</option>
+          </select>
+          <label>Steps:</label>
+          <input type="number" class="stepsFrame" value="1" step="any" min="1">
+          <div style="margin-bottom:10px;"></div>
+          <div class="footer">
+            <button class="calcFrameBtn">Calculate</button>
+            <div class="result resultFrame"></div>
+          </div>
+        </div>
+      </div>`;
+      var container = document.getElementById('calcInstances');
+      var div = document.createElement('div');
+      div.innerHTML = template;
+      container.appendChild(div);
+      
+      // Event listeners for calculation buttons
+      div.querySelector('.calcTotalBtn').addEventListener('click', calculateTotalInstance);
+      div.querySelector('.calcFrameBtn').addEventListener('click', calculateFrameInstance);
+      
+      // Disable FPS input if "frames" is selected for Duration
+      var unitDurationSelect = div.querySelector('.unitDuration');
+      var fpsInput = div.querySelector('.fps');
+      function updateFPSState() {
+        if(unitDurationSelect.value === "frames"){
+          fpsInput.disabled = true;
+          fpsInput.style.backgroundColor = "#555";
+        } else {
+          fpsInput.disabled = false;
+          fpsInput.style.backgroundColor = "";
+        }
+      }
+      unitDurationSelect.addEventListener('change', updateFPSState);
+      updateFPSState();
+    }
+    // Calculation functions for each instance
+    function calculateTotalInstance(e) {
+      var container = e.target.closest('.calc-pair');
+      var nodesTotal = parseFloat(container.querySelector('.nodesTotal').value) || 1;
+      var tpf = parseFloat(container.querySelector('.timePerFrame').value) || 0;
+      var unitFrame = container.querySelector('.unitFrame').value;
+      var timePerFrameSec = convertToSecondsCalc(tpf, unitFrame);
+      var durationVal = parseFloat(container.querySelector('.duration').value) || 0;
+      var unitDuration = container.querySelector('.unitDuration').value;
+      var fps = parseFloat(container.querySelector('.fps').value) || 0;
+      var totalFrames = (unitDuration === "frames") ? durationVal : durationToFramesCalc(durationVal, unitDuration, fps);
+      var totalRenderSec = timePerFrameSec * totalFrames;
+      var steps = parseFloat(container.querySelector('.stepsTotal').value) || 1;
+      var effectiveTotal = (totalRenderSec * steps) / nodesTotal;
+      var resultUnit = container.querySelector('.resultUnit').value;
+      container.querySelector('.resultTotal').innerText = convertFromSecondsCalc(effectiveTotal, resultUnit).toFixed(2) + " " + resultUnit;
+    }
+    function calculateFrameInstance(e) {
+      var container = e.target.closest('.calc-pair');
+      var frames = parseFloat(container.querySelector('.frames').value) || 0;
+      if (frames === 0) {
+        container.querySelector('.resultFrame').innerText = "Frames must be > 0.";
+        return;
+      }
+      var totalRenderRaw = parseFloat(container.querySelector('.totalRenderTime').value) || 0;
+      var unitTotal = container.querySelector('.unitTotal').value;
+      var totalRenderVal = convertToSecondsCalc(totalRenderRaw, unitTotal);
+      var nodes = parseFloat(container.querySelector('.nodesFrame').value) || 1;
+      var effectiveTotal = totalRenderVal / nodes;
+      var tpfVal = effectiveTotal / frames;
+      var steps = parseFloat(container.querySelector('.stepsFrame').value) || 1;
+      tpfVal = tpfVal * steps;
+      var resultUnit = container.querySelector('.resultUnitFrame').value;
+      container.querySelector('.resultFrame').innerText = convertFromSecondsCalc(tpfVal, resultUnit).toFixed(2) + " " + resultUnit;
+    }
+    // AUTO-SCROLLING CAROUSEL: highlight the card closest to the center
+    function updateCarouselFocus() {
+      const carousel = document.querySelector('.carousel-container');
+      if (!carousel) return;
+      const track = carousel.querySelector('.carousel-track');
+      const cards = carousel.querySelectorAll('.production-card');
+      const carouselRect = carousel.getBoundingClientRect();
+      const carouselCenter = carouselRect.left + carouselRect.width / 2;
+      cards.forEach(card => {
+        const cardRect = card.getBoundingClientRect();
+        const cardCenter = cardRect.left + cardRect.width / 2;
+        const distance = Math.abs(carouselCenter - cardCenter);
+        // If the distance is less than 50px, mark as active
+        if(distance < 50) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+    setInterval(updateCarouselFocus, 100);
+    // GENERATE PDF WITH DARK STYLE AND DETAILED SUMMARY
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Draw dark background on each page
+      doc.setFillColor(54, 57, 63); // #36393f
+      doc.rect(0, 0, pageWidth, pageHeight, "F");
+      
+      doc.setTextColor(220, 221, 222); // #dcddde
+      doc.setFontSize(16);
+      doc.text("Calculation Summary", pageWidth / 2, 20, { align: "center" });
+      
+      let y = 30;
+      const pairs = document.querySelectorAll('.calc-pair');
+      pairs.forEach((pair, index) => {
+        doc.setFontSize(14);
+        doc.text(`Calculation ${index + 1}`, 10, y);
+        y += 7;
+        // Total Time Data
+        let nodesTotal = pair.querySelector('.nodesTotal').value || "N/A";
+        let timePerFrame = pair.querySelector('.timePerFrame').value || "N/A";
+        let unitFrame = pair.querySelector('.unitFrame').value;
+        let duration = pair.querySelector('.duration').value || "N/A";
+        let unitDuration = pair.querySelector('.unitDuration').value;
+        let fps = pair.querySelector('.fps').value || "N/A";
+        let stepsTotal = pair.querySelector('.stepsTotal').value || "N/A";
+        let totalResult = pair.querySelector('.resultTotal').innerText || "Not calculated";
+        doc.setFontSize(12);
+        doc.text("Total Time:", 10, y);
+        y += 6;
+        doc.text(`  Nodes: ${nodesTotal} | Time per frame: ${timePerFrame} ${unitFrame}`, 10, y);
+        y += 6;
+        doc.text(`  Duration: ${duration} ${unitDuration} | FPS: ${fps} | Steps: ${stepsTotal}`, 10, y);
+        y += 6;
+        doc.text(`  Result: ${totalResult}`, 10, y);
+        y += 10;
+        // Time per Frame Data
+        let nodesFrame = pair.querySelector('.nodesFrame').value || "N/A";
+        let frames = pair.querySelector('.frames').value || "N/A";
+        let totalRenderTime = pair.querySelector('.totalRenderTime').value || "N/A";
+        let unitTotalSel = pair.querySelector('.unitTotal').value;
+        let stepsFrame = pair.querySelector('.stepsFrame').value || "N/A";
+        let frameResult = pair.querySelector('.resultFrame').innerText || "Not calculated";
+        doc.text("Time per Frame:", 10, y);
+        y += 6;
+        doc.text(`  Nodes: ${nodesFrame} | Frames: ${frames}`, 10, y);
+        y += 6;
+        doc.text(`  Total Render Time: ${totalRenderTime} ${unitTotalSel} | Steps: ${stepsFrame}`, 10, y);
+        y += 6;
+        doc.text(`  Result: ${frameResult}`, 10, y);
+        y += 10;
+        if (y > pageHeight - 20) {
+          doc.addPage();
+          doc.setFillColor(54, 57, 63);
+          doc.rect(0, 0, pageWidth, pageHeight, "F");
+          doc.setTextColor(220, 221, 222);
+          y = 20;
+        }
+      });
+      // Decorative line
+      doc.setDrawColor(114, 137, 218);
+      doc.line(10, y, pageWidth - 10, y);
+      doc.save("Calculation_Summary.pdf");
+    }
+  </script>
+</body>
+</html>
